@@ -1,0 +1,285 @@
+:root {
+    --bg-dark: #05070d;
+    --panel-bg: rgba(9, 13, 24, 0.72);
+    --panel-border: rgba(0, 240, 255, 0.22);
+    --accent-cyan: #00f0ff;
+    --accent-amber: #ffb300;
+    --accent-emerald: #00ff77;
+    --accent-rose: #ff2a6d;
+    --accent-violet: #b026ff;
+    --text-main: #e2e8f0;
+    --text-muted: #798ba3;
+    --font-mono: 'JetBrains Mono', 'Space Mono', 'Consolas', 'Courier New', monospace;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: var(--bg-dark);
+    font-family: var(--font-mono);
+    color: var(--text-main);
+}
+
+#canvas-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* Glassmorphic Cyber-HUD Base */
+.hud-panel {
+    position: absolute;
+    z-index: 10;
+    background: var(--panel-bg);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+    pointer-events: auto;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.hud-panel:hover {
+    border-color: rgba(0, 240, 255, 0.45);
+    box-shadow: 0 10px 38px 0 rgba(0, 240, 255, 0.12);
+}
+
+/* Top Header HUD */
+#top-hud {
+    top: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.brand-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--accent-cyan);
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+}
+
+.brand-tag {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    border-left: 1px solid rgba(255, 255, 255, 0.15);
+    padding-left: 14px;
+}
+
+/* Top Right Action Bar */
+#action-bar {
+    top: 20px;
+    right: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.hud-btn {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    color: var(--text-main);
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.hud-btn:hover {
+    background: rgba(0, 240, 255, 0.15);
+    border-color: var(--accent-cyan);
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.35);
+}
+
+.hud-btn.active {
+    background: rgba(0, 240, 255, 0.28);
+    border-color: var(--accent-cyan);
+    color: #ffffff;
+}
+
+/* Telemetry Stats Panel */
+#stats-panel {
+    bottom: 20px;
+    left: 20px;
+    min-width: 220px;
+}
+
+.panel-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 4px;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.82rem;
+    margin-bottom: 6px;
+}
+
+.stat-val {
+    color: var(--accent-cyan);
+    font-weight: 600;
+}
+
+/* Audio Visualizer Canvas */
+#audio-visualizer {
+    width: 100%;
+    height: 28px;
+    margin-top: 10px;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 4px;
+}
+
+/* Control Deck Panel */
+#control-panel {
+    bottom: 20px;
+    right: 20px;
+    width: 320px;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+}
+
+.section-group {
+    margin-bottom: 14px;
+}
+
+.section-group label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.74rem;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+input[type="range"] {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 2px;
+    outline: none;
+    accent-color: var(--accent-cyan);
+    cursor: pointer;
+}
+
+/* Preset Buttons Grid */
+.preset-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.preset-btn {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-main);
+    padding: 7px 8px;
+    border-radius: 5px;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.preset-btn:hover, .preset-btn.active {
+    background: rgba(0, 240, 255, 0.2);
+    border-color: var(--accent-cyan);
+    color: #ffffff;
+}
+
+/* Force Matrix Grid Mini UI */
+#matrix-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+}
+
+#matrix-table th, #matrix-table td {
+    padding: 3px 2px;
+    text-align: center;
+    font-size: 0.62rem;
+}
+
+.matrix-cell {
+    width: 34px;
+    height: 22px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.65rem;
+    font-weight: bold;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: transform 0.15s ease;
+}
+
+.matrix-cell:hover {
+    transform: scale(1.18);
+    z-index: 2;
+}
+
+/* Gesture Hint Banner */
+#gesture-banner {
+    position: absolute;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 15;
+    background: rgba(0, 240, 255, 0.14);
+    border: 1px solid var(--accent-cyan);
+    border-radius: 20px;
+    padding: 8px 18px;
+    font-size: 0.74rem;
+    color: var(--accent-cyan);
+    letter-spacing: 1px;
+    pointer-events: none;
+    animation: pulseHint 2.4s infinite ease-in-out;
+}
+
+@keyframes pulseHint {
+    0%, 100% { opacity: 0.85; transform: translate(-50%, 0); }
+    50% { opacity: 0.35; transform: translate(-50%, -4px); }
+}
+
+/* Scrollbar styling */
+#control-panel::-webkit-scrollbar {
+    width: 4px;
+}
+#control-panel::-webkit-scrollbar-thumb {
+    background: rgba(0, 240, 255, 0.3);
+    border-radius: 2px;
+}

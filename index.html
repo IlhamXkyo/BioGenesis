@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BioGenesis // Emergent Artificial Life & Primordial Particle Chemistry</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="canvas-container">
+        <canvas id="sim-canvas"></canvas>
+    </div>
+
+    <!-- Gesture Audio & Controls Hint -->
+    <div id="gesture-banner">
+        CLICK ANYWHERE TO UNLOCK AUDIO & INTERACTIVE GRAVITY
+    </div>
+
+    <!-- Top Header HUD -->
+    <div id="top-hud" class="hud-panel">
+        <div class="brand-title">🧬 BIOGENESIS</div>
+        <div class="brand-tag">PRIMORDIAL PARTICLE CHEMISTRY // KINETIC CELLULAR LAB</div>
+    </div>
+
+    <!-- Top Right Action Controls -->
+    <div id="action-bar" class="hud-panel">
+        <button id="btn-sound" class="hud-btn" title="Toggle Procedural Web Audio">
+            <span id="sound-icon">🔇</span> <span id="sound-text">AUDIO OFF</span>
+        </button>
+        <button id="btn-mutate" class="hud-btn" title="Mutate Force Matrix Slightly">
+            <span>🧬</span> MUTATE
+        </button>
+        <button id="btn-random" class="hud-btn" title="Completely Randomize Forces">
+            <span>🎲</span> RANDOM
+        </button>
+        <button id="btn-screenshot" class="hud-btn" title="Capture High-Res Snapshot">
+            <span>📸</span> SNAP
+        </button>
+        <button id="btn-fullscreen" class="hud-btn" title="Toggle Fullscreen">
+            <span>⛶</span> FULL
+        </button>
+    </div>
+
+    <!-- Telemetry Stats Panel -->
+    <div id="stats-panel" class="hud-panel">
+        <div class="panel-label">Telemetry & Dynamics</div>
+        <div class="stat-row">
+            <span>FPS</span>
+            <span id="stat-fps" class="stat-val">60</span>
+        </div>
+        <div class="stat-row">
+            <span>POPULATION</span>
+            <span id="stat-count" class="stat-val">2400</span>
+        </div>
+        <div class="stat-row">
+            <span>MEAN KINETIC VEL</span>
+            <span id="stat-velocity" class="stat-val">0.00</span>
+        </div>
+        <div class="stat-row">
+            <span>SYSTEM ENTROPY</span>
+            <span id="stat-entropy" class="stat-val">0.00</span>
+        </div>
+        
+        <div class="panel-label" style="margin-top: 10px;">Acoustic Spectrum</div>
+        <canvas id="audio-visualizer"></canvas>
+    </div>
+
+    <!-- Control Deck Panel -->
+    <div id="control-panel" class="hud-panel">
+        <div class="panel-label">Physics & Environment</div>
+
+        <div class="section-group">
+            <label>
+                <span>Friction / Viscosity</span>
+                <span id="val-friction">0.86</span>
+            </label>
+            <input type="range" id="input-friction" min="0.70" max="0.96" step="0.01" value="0.86">
+        </div>
+
+        <div class="section-group">
+            <label>
+                <span>Repulsion Core (rMin)</span>
+                <span id="val-rmin">18px</span>
+            </label>
+            <input type="range" id="input-rmin" min="10" max="32" step="1" value="18">
+        </div>
+
+        <div class="section-group">
+            <label>
+                <span>Interaction Reach (rMax)</span>
+                <span id="val-rmax">72px</span>
+            </label>
+            <input type="range" id="input-rmax" min="40" max="95" step="1" value="72">
+        </div>
+
+        <div class="section-group">
+            <label>
+                <span>Force Intensity</span>
+                <span id="val-force">0.42</span>
+            </label>
+            <input type="range" id="input-force" min="0.10" max="0.90" step="0.02" value="0.42">
+        </div>
+
+        <div class="section-group">
+            <label>
+                <span>Particle Count</span>
+                <span id="val-count">2400</span>
+            </label>
+            <input type="range" id="input-count" min="600" max="4200" step="300" value="2400">
+        </div>
+
+        <div class="panel-label">Emergent Presets</div>
+        <div class="preset-grid">
+            <button class="preset-btn active" data-preset="mitosis">Mitosis Cells</button>
+            <button class="preset-btn" data-preset="serpents">Swarm Serpents</button>
+            <button class="preset-btn" data-preset="predator">Predator Pack</button>
+            <button class="preset-btn" data-preset="crystalline">Crystal Lattice</button>
+            <button class="preset-btn" data-preset="supernova">Supernova Vortex</button>
+        </div>
+
+        <div class="panel-label" style="margin-top: 14px;">Inter-Species Genetic Matrix</div>
+        <table id="matrix-table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th style="color: #00f0ff;">A</th>
+                    <th style="color: #ffb300;">B</th>
+                    <th style="color: #00ff77;">C</th>
+                    <th style="color: #b026ff;">D</th>
+                    <th style="color: #ff2a6d;">E</th>
+                    <th style="color: #05d9e8;">F</th>
+                </tr>
+            </thead>
+            <tbody id="matrix-tbody">
+                <!-- Dynamically generated rows -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Scripts -->
+    <script src="audioEngine.js"></script>
+    <script src="simulation.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
