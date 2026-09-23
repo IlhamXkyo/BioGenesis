@@ -133,8 +133,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     inputRmax.addEventListener('input', (e) => {
-        sim.rMax = parseInt(e.target.value, 10);
-        valRmax.textContent = `${sim.rMax}px`;
+        const val = parseInt(e.target.value, 10);
+        sim.setRMax(val);
+        valRmax.textContent = `${val}px`;
     });
 
     inputForce.addEventListener('input', (e) => {

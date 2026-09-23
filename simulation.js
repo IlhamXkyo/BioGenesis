@@ -31,7 +31,7 @@ class ParticleSimulation {
         this.wrapBounds = true;
 
         // Spatial grid setup (cell size >= rMax for fast O(N) neighbor lookup)
-        this.cellSize = 75;
+        this.cellSize = Math.max(95, Math.ceil(this.rMax));
         this.cols = Math.ceil(this.width / this.cellSize);
         this.rows = Math.ceil(this.height / this.cellSize);
         this.grid = [];
@@ -80,6 +80,13 @@ class ParticleSimulation {
         this.cols = Math.ceil(this.width / this.cellSize);
         this.rows = Math.ceil(this.height / this.cellSize);
         this.renderSprites();
+    }
+
+    setRMax(val) {
+        this.rMax = val;
+        this.cellSize = Math.max(95, Math.ceil(this.rMax));
+        this.cols = Math.ceil(this.width / this.cellSize);
+        this.rows = Math.ceil(this.height / this.cellSize);
     }
 
     initMatrix() {
