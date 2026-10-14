@@ -1,0 +1,23 @@
+{
+  "name": "biogenesis",
+  "version": "1.1.0",
+  "description": "Interactive Emergent Artificial Life & Primordial Particle Chemistry Sandbox built with HTML5 Canvas & Web Audio API",
+  "main": "simulation.js",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "start": "python -m http.server 8000"
+  },
+  "keywords": [
+    "particle-life",
+    "artificial-life",
+    "simulation",
+    "html5-canvas",
+    "web-audio-api",
+    "cellular-automata",
+    "physics-engine",
+    "generative-art",
+    "emergent-behavior"
+  ],
+  "author": "IlhamXkyo",
+  "license": "MIT"
+}

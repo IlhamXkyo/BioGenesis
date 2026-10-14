@@ -16,7 +16,7 @@
 
     <!-- Gesture Audio & Controls Hint -->
     <div id="gesture-banner">
-        CLICK ANYWHERE TO UNLOCK AUDIO & INTERACTIVE GRAVITY
+        CLICK ANYWHERE TO UNLOCK AUDIO & INTERACTION // SPACEBAR TO PAUSE
     </div>
 
     <!-- Top Header HUD -->
@@ -27,8 +27,17 @@
 
     <!-- Top Right Action Controls -->
     <div id="action-bar" class="hud-panel">
+        <button id="btn-play" class="hud-btn" title="Pause / Resume Simulation (Spacebar)">
+            <span id="play-icon">⏸</span> <span id="play-text">PAUSE</span>
+        </button>
         <button id="btn-sound" class="hud-btn" title="Toggle Procedural Web Audio">
             <span id="sound-icon">🔇</span> <span id="sound-text">AUDIO OFF</span>
+        </button>
+        <button id="btn-reset" class="hud-btn" title="Reset Particles with Current Preset (Key R)">
+            <span>🔄</span> RESET
+        </button>
+        <button id="btn-clear" class="hud-btn" title="Clear All Particles (Key C)">
+            <span>🗑️</span> CLEAR
         </button>
         <button id="btn-mutate" class="hud-btn" title="Mutate Force Matrix Slightly">
             <span>🧬</span> MUTATE
@@ -36,6 +45,13 @@
         <button id="btn-random" class="hud-btn" title="Completely Randomize Forces">
             <span>🎲</span> RANDOM
         </button>
+        <button id="btn-export" class="hud-btn" title="Export Current Force Matrix to JSON">
+            <span>💾</span> EXPORT
+        </button>
+        <button id="btn-import" class="hud-btn" title="Import Custom Force Matrix from JSON">
+            <span>📂</span> IMPORT
+        </button>
+        <input type="file" id="file-import" accept=".json" style="display: none;">
         <button id="btn-screenshot" class="hud-btn" title="Capture High-Res Snapshot">
             <span>📸</span> SNAP
         </button>
@@ -47,6 +63,10 @@
     <!-- Telemetry Stats Panel -->
     <div id="stats-panel" class="hud-panel">
         <div class="panel-label">Telemetry & Dynamics</div>
+        <div class="stat-row">
+            <span>STATUS</span>
+            <span id="stat-status" class="stat-val" style="color: #00ff77;">RUNNING</span>
+        </div>
         <div class="stat-row">
             <span>FPS</span>
             <span id="stat-fps" class="stat-val">60</span>
@@ -70,7 +90,26 @@
 
     <!-- Control Deck Panel -->
     <div id="control-panel" class="hud-panel">
-        <div class="panel-label">Physics & Environment</div>
+        <div class="panel-label">Interactive Brush & Cursor</div>
+        <div class="brush-mode-grid">
+            <button class="tool-btn active" data-tool="attract">Attractor</button>
+            <button class="tool-btn" data-tool="repel">Repulsor</button>
+            <button class="tool-btn" data-tool="spawn">Inject Species</button>
+        </div>
+
+        <div id="species-selector" class="species-picker" style="display: none;">
+            <div class="picker-label">Select Species to Inject:</div>
+            <div class="species-pill-grid">
+                <button class="sp-pill active" data-species="0" style="--sp-color: #00f0ff;">A</button>
+                <button class="sp-pill" data-species="1" style="--sp-color: #ffb300;">B</button>
+                <button class="sp-pill" data-species="2" style="--sp-color: #00ff77;">C</button>
+                <button class="sp-pill" data-species="3" style="--sp-color: #b026ff;">D</button>
+                <button class="sp-pill" data-species="4" style="--sp-color: #ff2a6d;">E</button>
+                <button class="sp-pill" data-species="5" style="--sp-color: #05d9e8;">F</button>
+            </div>
+        </div>
+
+        <div class="panel-label" style="margin-top: 12px;">Physics & Environment</div>
 
         <div class="section-group">
             <label>
@@ -109,7 +148,7 @@
                 <span>Particle Count</span>
                 <span id="val-count">2400</span>
             </label>
-            <input type="range" id="input-count" min="600" max="4200" step="300" value="2400">
+            <input type="range" id="input-count" min="0" max="4200" step="100" value="2400">
         </div>
 
         <div class="panel-label">Emergent Presets</div>
@@ -122,6 +161,7 @@
         </div>
 
         <div class="panel-label" style="margin-top: 14px;">Inter-Species Genetic Matrix</div>
+        <div class="matrix-instruction">Left-click: +0.2 | Right-click: -0.2</div>
         <table id="matrix-table">
             <thead>
                 <tr>

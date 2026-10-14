@@ -1,6 +1,6 @@
 :root {
     --bg-dark: #05070d;
-    --panel-bg: rgba(9, 13, 24, 0.72);
+    --panel-bg: rgba(9, 13, 24, 0.78);
     --panel-border: rgba(0, 240, 255, 0.22);
     --accent-cyan: #00f0ff;
     --accent-amber: #ffb300;
@@ -41,6 +41,7 @@ canvas {
     display: block;
     width: 100%;
     height: 100%;
+    touch-action: none;
 }
 
 /* Glassmorphic Cyber-HUD Base */
@@ -93,17 +94,20 @@ canvas {
     top: 20px;
     right: 20px;
     display: flex;
-    gap: 10px;
+    flex-wrap: wrap;
+    gap: 8px;
+    max-width: 680px;
+    justify-content: flex-end;
 }
 
 .hud-btn {
     background: rgba(15, 23, 42, 0.85);
     border: 1px solid rgba(0, 240, 255, 0.3);
     color: var(--text-main);
-    padding: 8px 14px;
+    padding: 7px 12px;
     border-radius: 6px;
     font-family: var(--font-mono);
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -121,6 +125,12 @@ canvas {
 .hud-btn.active {
     background: rgba(0, 240, 255, 0.28);
     border-color: var(--accent-cyan);
+    color: #ffffff;
+}
+
+.hud-btn.paused {
+    background: rgba(255, 42, 109, 0.28);
+    border-color: var(--accent-rose);
     color: #ffffff;
 }
 
@@ -166,13 +176,78 @@ canvas {
 #control-panel {
     bottom: 20px;
     right: 20px;
-    width: 320px;
+    width: 330px;
     max-height: calc(100vh - 120px);
     overflow-y: auto;
 }
 
+/* Brush Tools */
+.brush-mode-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.tool-btn {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-main);
+    padding: 6px 4px;
+    border-radius: 5px;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.tool-btn:hover, .tool-btn.active {
+    background: rgba(0, 240, 255, 0.22);
+    border-color: var(--accent-cyan);
+    color: #ffffff;
+}
+
+.species-picker {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 10px;
+}
+
+.picker-label {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+}
+
+.species-pill-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+}
+
+.sp-pill {
+    background: rgba(15, 23, 42, 0.8);
+    border: 1.5px solid var(--sp-color);
+    color: var(--sp-color);
+    font-weight: 700;
+    font-size: 0.72rem;
+    padding: 4px 0;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.sp-pill:hover, .sp-pill.active {
+    background: var(--sp-color);
+    color: #05070d;
+    box-shadow: 0 0 8px var(--sp-color);
+}
+
 .section-group {
-    margin-bottom: 14px;
+    margin-bottom: 12px;
 }
 
 .section-group label {
@@ -221,10 +296,17 @@ input[type="range"] {
 }
 
 /* Force Matrix Grid Mini UI */
+.matrix-instruction {
+    font-size: 0.62rem;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    text-align: center;
+}
+
 #matrix-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 8px;
+    margin-top: 4px;
 }
 
 #matrix-table th, #matrix-table td {
@@ -234,7 +316,7 @@ input[type="range"] {
 }
 
 .matrix-cell {
-    width: 34px;
+    width: 35px;
     height: 22px;
     border-radius: 3px;
     cursor: pointer;

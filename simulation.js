@@ -1,15 +1,15 @@
 /**
  * BioGenesis - Particle Life Physics Engine
  * High-performance spatial grid partitioning, asymmetric force kernels,
- * pre-rendered glowing sprites, and emergent multicellular behavior.
+ * pre-rendered glowing sprites, robust singularity resolution, and emergent multicellular behavior.
  */
 
 class ParticleSimulation {
-    constructor(canvas) {
+    constructor(canvas = null) {
         this.canvas = canvas;
-        this.ctx = canvas.getContext('2d', { alpha: false });
-        this.width = canvas.width;
-        this.height = canvas.height;
+        this.ctx = (canvas && canvas.getContext) ? canvas.getContext('2d', { alpha: false }) : null;
+        this.width = canvas ? canvas.width : 1200;
+        this.height = canvas ? canvas.height : 800;
 
         // Species configuration (6 distinct species)
         this.species = [
@@ -29,9 +29,11 @@ class ParticleSimulation {
         this.rMax = 72;      // Maximum interaction range
         this.forceFactor = 0.42;
         this.wrapBounds = true;
+        this.isPaused = false;
+        this.currentPreset = 'mitosis';
 
         // Spatial grid setup (cell size >= rMax for fast O(N) neighbor lookup)
-        this.cellSize = Math.max(95, Math.ceil(this.rMax));
+        this.cellSize = Math.max(40, Math.ceil(this.rMax));
         this.cols = Math.ceil(this.width / this.cellSize);
         this.rows = Math.ceil(this.height / this.cellSize);
         this.grid = [];
@@ -46,24 +48,34 @@ class ParticleSimulation {
 
         // Pre-rendered offscreen sprite canvases for zero-lag glow rendering
         this.sprites = [];
-        this.renderSprites();
+        if (typeof document !== 'undefined') {
+            this.renderSprites();
+        }
 
         // Telemetry metrics
         this.averageVelocity = 0;
         this.entropy = 0;
         this.fps = 60;
-        this.lastFrameTime = performance.now();
+        this.lastFrameTime = (typeof performance !== 'undefined') ? performance.now() : Date.now();
         this.frameCount = 0;
-        this.fpsTimer = performance.now();
+        this.fpsTimer = this.lastFrameTime;
 
         // External forces (user mouse interaction)
         this.interactionForce = {
             active: false,
             x: 0,
             y: 0,
-            type: 'attract', // 'attract' or 'repel'
+            type: 'attract', // 'attract', 'repel', 'spawn'
             radius: 180,
             strength: 1.8
+        };
+
+        // Brush mode controller
+        this.brush = {
+            mode: 'attract', // 'attract', 'repel', 'spawn'
+            species: 0,
+            radius: 180,
+            spawnRate: 6
         };
 
         // Initialize default population & preset
@@ -74,19 +86,24 @@ class ParticleSimulation {
     resize(w, h) {
         this.width = w;
         this.height = h;
-        this.canvas.width = w;
-        this.canvas.height = h;
+        if (this.canvas) {
+            this.canvas.width = w;
+            this.canvas.height = h;
+        }
 
         this.cols = Math.ceil(this.width / this.cellSize);
         this.rows = Math.ceil(this.height / this.cellSize);
-        this.renderSprites();
+        if (typeof document !== 'undefined') {
+            this.renderSprites();
+        }
     }
 
     setRMax(val) {
         this.rMax = val;
-        this.cellSize = Math.max(95, Math.ceil(this.rMax));
+        this.cellSize = Math.max(40, Math.ceil(this.rMax));
         this.cols = Math.ceil(this.width / this.cellSize);
         this.rows = Math.ceil(this.height / this.cellSize);
+        this.updateGrid();
     }
 
     initMatrix() {
@@ -94,12 +111,13 @@ class ParticleSimulation {
         for (let i = 0; i < this.numSpecies; i++) {
             this.matrix[i] = [];
             for (let j = 0; j < this.numSpecies; j++) {
-                this.matrix[i][j] = (Math.random() * 2 - 1).toFixed(2) * 1.0;
+                this.matrix[i][j] = parseFloat((Math.random() * 2 - 1).toFixed(2));
             }
         }
     }
 
     renderSprites() {
+        if (typeof document === 'undefined') return;
         this.sprites = [];
         const size = 28; // Sprite bounding box
         const center = size / 2;
@@ -135,6 +153,7 @@ class ParticleSimulation {
     }
 
     resetParticles(count = this.targetCount) {
+        this.targetCount = count;
         this.particles = [];
         for (let i = 0; i < count; i++) {
             this.particles.push({
@@ -147,15 +166,55 @@ class ParticleSimulation {
         }
     }
 
+    clearParticles() {
+        this.particles = [];
+        this.targetCount = 0;
+        this.averageVelocity = 0;
+        this.entropy = 0;
+    }
+
+    togglePause() {
+        this.isPaused = !this.isPaused;
+        return this.isPaused;
+    }
+
+    spawnParticles(x, y, species = 0, count = 1, radius = 30) {
+        const clampedSpecies = Math.max(0, Math.min(this.numSpecies - 1, species));
+        for (let k = 0; k < count; k++) {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = Math.random() * radius;
+            let px = x + Math.cos(angle) * dist;
+            let py = y + Math.sin(angle) * dist;
+
+            if (this.wrapBounds) {
+                px = ((px % this.width) + this.width) % this.width;
+                py = ((py % this.height) + this.height) % this.height;
+            } else {
+                px = Math.max(10, Math.min(this.width - 10, px));
+                py = Math.max(10, Math.min(this.height - 10, py));
+            }
+
+            this.particles.push({
+                x: px,
+                y: py,
+                vx: (Math.random() - 0.5) * 1.2,
+                vy: (Math.random() - 0.5) * 1.2,
+                species: clampedSpecies
+            });
+        }
+        this.targetCount = this.particles.length;
+    }
+
     mutateMatrix(rate = 0.25) {
         for (let i = 0; i < this.numSpecies; i++) {
             for (let j = 0; j < this.numSpecies; j++) {
                 if (Math.random() < rate) {
                     const delta = (Math.random() * 2 - 1) * 0.45;
-                    this.matrix[i][j] = Math.max(-1.0, Math.min(1.0, this.matrix[i][j] + delta));
+                    this.matrix[i][j] = parseFloat(Math.max(-1.0, Math.min(1.0, this.matrix[i][j] + delta)).toFixed(2));
                 }
             }
         }
+        this.currentPreset = 'custom';
     }
 
     randomizeMatrix() {
@@ -163,6 +222,44 @@ class ParticleSimulation {
             for (let j = 0; j < this.numSpecies; j++) {
                 this.matrix[i][j] = parseFloat((Math.random() * 2 - 1).toFixed(2));
             }
+        }
+        this.currentPreset = 'custom';
+    }
+
+    exportMatrix() {
+        return JSON.stringify({
+            version: '1.1.0',
+            preset: this.currentPreset || 'custom',
+            matrix: this.matrix,
+            rMin: this.rMin,
+            rMax: this.rMax,
+            friction: this.friction,
+            forceFactor: this.forceFactor
+        }, null, 2);
+    }
+
+    importMatrix(data) {
+        try {
+            const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+            if (parsed && Array.isArray(parsed.matrix) && parsed.matrix.length === this.numSpecies) {
+                for (let i = 0; i < this.numSpecies; i++) {
+                    if (Array.isArray(parsed.matrix[i]) && parsed.matrix[i].length === this.numSpecies) {
+                        for (let j = 0; j < this.numSpecies; j++) {
+                            const val = Number(parsed.matrix[i][j]);
+                            this.matrix[i][j] = isNaN(val) ? 0 : parseFloat(Math.max(-1, Math.min(1, val)).toFixed(2));
+                        }
+                    }
+                }
+                if (typeof parsed.rMin === 'number') this.rMin = parsed.rMin;
+                if (typeof parsed.rMax === 'number') this.setRMax(parsed.rMax);
+                if (typeof parsed.friction === 'number') this.friction = parsed.friction;
+                if (typeof parsed.forceFactor === 'number') this.forceFactor = parsed.forceFactor;
+                this.currentPreset = parsed.preset || 'custom';
+                return true;
+            }
+            return false;
+        } catch (e) {
+            return false;
         }
     }
 
@@ -211,17 +308,20 @@ class ParticleSimulation {
         };
 
         if (presets[name]) {
+            this.currentPreset = name;
             for (let i = 0; i < this.numSpecies; i++) {
                 for (let j = 0; j < this.numSpecies; j++) {
                     this.matrix[i][j] = presets[name][i][j];
                 }
             }
+            return true;
         }
+        return false;
     }
 
     updateGrid() {
         const totalCells = this.cols * this.rows;
-        if (this.grid.length !== totalCells) {
+        if (!this.grid || this.grid.length !== totalCells) {
             this.grid = new Array(totalCells);
             for (let i = 0; i < totalCells; i++) this.grid[i] = [];
         } else {
@@ -233,17 +333,27 @@ class ParticleSimulation {
         const len = this.particles.length;
         for (let i = 0; i < len; i++) {
             const p = this.particles[i];
-            const col = Math.floor(p.x / this.cellSize);
-            const row = Math.floor(p.y / this.cellSize);
+            let col = Math.floor(p.x / this.cellSize);
+            let row = Math.floor(p.y / this.cellSize);
 
-            if (col >= 0 && col < this.cols && row >= 0 && row < this.rows) {
-                const cellIndex = row * this.cols + col;
-                this.grid[cellIndex].push(i);
-            }
+            if (col < 0) col = 0;
+            if (col >= this.cols) col = this.cols - 1;
+            if (row < 0) row = 0;
+            if (row >= this.rows) row = this.rows - 1;
+
+            const cellIndex = row * this.cols + col;
+            this.grid[cellIndex].push(i);
         }
     }
 
     step(audioEngine = null) {
+        if (this.isPaused) {
+            if (audioEngine && typeof audioEngine.updateKineticFeedback === 'function') {
+                audioEngine.updateKineticFeedback(0, 0);
+            }
+            return;
+        }
+
         this.updateGrid();
 
         const len = this.particles.length;
@@ -257,8 +367,13 @@ class ParticleSimulation {
         for (let i = 0; i < len; i++) {
             const p1 = this.particles[i];
             const p1Species = p1.species;
-            const col = Math.floor(p1.x / this.cellSize);
-            const row = Math.floor(p1.y / this.cellSize);
+            let col = Math.floor(p1.x / this.cellSize);
+            let row = Math.floor(p1.y / this.cellSize);
+
+            if (col < 0) col = 0;
+            if (col >= this.cols) col = this.cols - 1;
+            if (row < 0) row = 0;
+            if (row >= this.rows) row = this.rows - 1;
 
             let fx = 0;
             let fy = 0;
@@ -266,7 +381,7 @@ class ParticleSimulation {
             for (let ox = -1; ox <= 1; ox++) {
                 let neighborCol = col + ox;
                 if (this.wrapBounds) {
-                    neighborCol = (neighborCol + this.cols) % this.cols;
+                    neighborCol = ((neighborCol % this.cols) + this.cols) % this.cols;
                 } else if (neighborCol < 0 || neighborCol >= this.cols) {
                     continue;
                 }
@@ -274,7 +389,7 @@ class ParticleSimulation {
                 for (let oy = -1; oy <= 1; oy++) {
                     let neighborRow = row + oy;
                     if (this.wrapBounds) {
-                        neighborRow = (neighborRow + this.rows) % this.rows;
+                        neighborRow = ((neighborRow % this.rows) + this.rows) % this.rows;
                     } else if (neighborRow < 0 || neighborRow >= this.rows) {
                         continue;
                     }
@@ -317,13 +432,18 @@ class ParticleSimulation {
 
                             fx += (dx / d) * f;
                             fy += (dy / d) * f;
+                        } else if (dSq <= 0.0001) {
+                            // Singularity repulsion jitter: break overlap stagnation
+                            const randAngle = Math.random() * Math.PI * 2;
+                            fx += Math.cos(randAngle) * 0.75;
+                            fy += Math.sin(randAngle) * 0.75;
                         }
                     }
                 }
             }
 
-            // Mouse interaction (Singularity / Shockwave)
-            if (this.interactionForce.active) {
+            // Mouse interaction (Singularity / Shockwave / Vortex)
+            if (this.interactionForce.active && this.interactionForce.type !== 'spawn') {
                 let mdx = this.interactionForce.x - p1.x;
                 let mdy = this.interactionForce.y - p1.y;
                 const mdistSq = mdx * mdx + mdy * mdy;
@@ -362,7 +482,7 @@ class ParticleSimulation {
             totalVelocity += speed;
         }
 
-        this.averageVelocity = totalVelocity / len;
+        this.averageVelocity = len > 0 ? totalVelocity / len : 0;
 
         // Entropy calculation based on velocity dispersion
         this.entropy = Math.min(1.0, this.averageVelocity * 0.18);
@@ -378,15 +498,16 @@ class ParticleSimulation {
 
         // FPS tracker
         this.frameCount++;
-        const now = performance.now();
+        const now = (typeof performance !== 'undefined') ? performance.now() : Date.now();
         if (now - this.fpsTimer >= 500) {
-            this.fps = Math.round((this.frameCount * 1000) / (now - this.fpsTimer));
+            this.fps = Math.round((this.frameCount * 1000) / Math.max(1, (now - this.fpsTimer)));
             this.frameCount = 0;
             this.fpsTimer = now;
         }
     }
 
     render() {
+        if (!this.ctx) return;
         const ctx = this.ctx;
 
         // Dark background with subtle motion trail
@@ -402,23 +523,61 @@ class ParticleSimulation {
         for (let i = 0; i < len; i++) {
             const p = this.particles[i];
             const sprite = this.sprites[p.species];
-            ctx.drawImage(sprite, p.x - spriteOffset, p.y - spriteOffset);
+            if (sprite) {
+                ctx.drawImage(sprite, p.x - spriteOffset, p.y - spriteOffset);
+            }
         }
 
-        // Render mouse singularity / shockwave reticle
+        // Render interactive reticle
         if (this.interactionForce.active) {
-            ctx.strokeStyle = this.interactionForce.type === 'attract' ? 'rgba(0, 240, 255, 0.4)' : 'rgba(255, 42, 109, 0.5)';
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.arc(this.interactionForce.x, this.interactionForce.y, this.interactionForce.radius, 0, Math.PI * 2);
-            ctx.stroke();
+            ctx.save();
+            if (this.interactionForce.type === 'spawn') {
+                const spColor = this.species[this.brush.species]?.color || '#00f0ff';
+                ctx.strokeStyle = spColor;
+                ctx.setLineDash([4, 4]);
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(this.interactionForce.x, this.interactionForce.y, this.interactionForce.radius * 0.35, 0, Math.PI * 2);
+                ctx.stroke();
+            } else {
+                ctx.strokeStyle = this.interactionForce.type === 'attract' ? 'rgba(0, 240, 255, 0.45)' : 'rgba(255, 42, 109, 0.55)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(this.interactionForce.x, this.interactionForce.y, this.interactionForce.radius, 0, Math.PI * 2);
+                ctx.stroke();
 
-            ctx.fillStyle = this.interactionForce.type === 'attract' ? 'rgba(0, 240, 255, 0.08)' : 'rgba(255, 42, 109, 0.1)';
-            ctx.fill();
+                ctx.fillStyle = this.interactionForce.type === 'attract' ? 'rgba(0, 240, 255, 0.08)' : 'rgba(255, 42, 109, 0.10)';
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // Render pause notification banner if simulation is paused
+        if (this.isPaused) {
+            ctx.save();
+            ctx.fillStyle = 'rgba(5, 7, 13, 0.75)';
+            ctx.fillRect(0, 0, this.width, this.height);
+
+            ctx.font = 'bold 18px "JetBrains Mono", monospace';
+            ctx.fillStyle = '#00f0ff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('⏸ SIMULATION PAUSED', this.width / 2, this.height / 2 - 12);
+
+            ctx.font = '12px "JetBrains Mono", monospace';
+            ctx.fillStyle = '#798ba3';
+            ctx.fillText('PRESS [SPACEBAR] OR CLICK PLAY IN ACTION BAR TO RESUME', this.width / 2, this.height / 2 + 18);
+            ctx.restore();
         }
 
         ctx.globalCompositeOperation = 'source-over';
     }
 }
 
-window.ParticleSimulation = ParticleSimulation;
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { ParticleSimulation };
+}
+
+if (typeof window !== 'undefined') {
+    window.ParticleSimulation = ParticleSimulation;
+}

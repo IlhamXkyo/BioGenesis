@@ -1,6 +1,7 @@
 /**
  * BioGenesis - Procedural Web Audio Engine
- * Generative ambient drone, kinetic feedback, and pentatonic interaction chimes.
+ * Generative ambient drone, kinetic feedback, zero-leak node lifecycle management,
+ * and pentatonic interaction chimes.
  */
 
 class AudioEngine {
@@ -17,19 +18,21 @@ class AudioEngine {
         // Pentatonic scale frequencies in Hz (C Minor Pentatonic)
         this.scale = [130.81, 155.56, 174.61, 196.00, 233.08, 261.63, 311.13, 349.23, 392.00, 466.16];
         this.lastChimeTime = 0;
+        this.lastFeedbackUpdate = 0;
     }
 
     init() {
         if (this.isInitialized) return;
 
+        if (typeof window === 'undefined') return;
         const AudioContextClass = window.AudioContext || window.webkitAudioContext;
         if (!AudioContextClass) {
-            console.warn("Web Audio API is not supported in this browser.");
+            console.warn("Web Audio API is not supported in this browser environment.");
             return;
         }
 
         this.ctx = new AudioContextClass();
-        
+
         // Master gain
         this.masterGain = this.ctx.createGain();
         this.masterGain.gain.setValueAtTime(0.0001, this.ctx.currentTime);
@@ -70,6 +73,8 @@ class AudioEngine {
         }
         this.unlock();
 
+        if (!this.ctx || !this.masterGain) return true;
+
         this.isMuted = !this.isMuted;
         const now = this.ctx.currentTime;
 
@@ -82,6 +87,7 @@ class AudioEngine {
     }
 
     setupDrones() {
+        if (!this.ctx) return;
         const droneFrequencies = [65.41, 98.00, 130.81, 196.00]; // C2, G2, C3, G3
         droneFrequencies.forEach((freq, i) => {
             const osc = this.ctx.createOscillator();
@@ -104,9 +110,13 @@ class AudioEngine {
     }
 
     updateKineticFeedback(averageVelocity, entropy) {
-        if (!this.isInitialized || this.isMuted || !this.ctx) return;
+        if (!this.isInitialized || this.isMuted || !this.ctx || !this.filterNode) return;
 
         const now = this.ctx.currentTime;
+        // Throttle feedback parameter automation to ~50ms to prevent audio-thread overload
+        if (now - this.lastFeedbackUpdate < 0.05) return;
+        this.lastFeedbackUpdate = now;
+
         // Modulate filter cutoff between 250Hz and 2800Hz based on kinetic energy
         const targetCutoff = Math.min(2800, Math.max(250, 300 + averageVelocity * 450 + entropy * 300));
         this.filterNode.frequency.setTargetAtTime(targetCutoff, now, 0.1);
@@ -117,7 +127,7 @@ class AudioEngine {
     }
 
     triggerInteractionChime(speciesIndex, velocity = 1) {
-        if (!this.isInitialized || this.isMuted || !this.ctx) return;
+        if (!this.isInitialized || this.isMuted || !this.ctx || !this.masterGain) return;
 
         const now = this.ctx.currentTime;
         // Throttle chimes to maintain pleasant musical texture
@@ -138,12 +148,22 @@ class AudioEngine {
         osc.connect(gain);
         gain.connect(this.masterGain);
 
+        // Clean up audio graph nodes upon playback completion to prevent memory leaks
+        osc.onended = () => {
+            try {
+                osc.disconnect();
+                gain.disconnect();
+            } catch (e) {
+                // Ignore disconnect on already destroyed nodes
+            }
+        };
+
         osc.start(now);
         osc.stop(now + 0.46);
     }
 
     triggerSingularityPulse() {
-        if (!this.isInitialized || this.isMuted || !this.ctx) return;
+        if (!this.isInitialized || this.isMuted || !this.ctx || !this.filterNode) return;
 
         const now = this.ctx.currentTime;
         const osc = this.ctx.createOscillator();
@@ -159,12 +179,22 @@ class AudioEngine {
         osc.connect(gain);
         gain.connect(this.filterNode);
 
+        // Clean up audio graph nodes upon pulse completion
+        osc.onended = () => {
+            try {
+                osc.disconnect();
+                gain.disconnect();
+            } catch (e) {
+                // Ignore disconnect on already destroyed nodes
+            }
+        };
+
         osc.start(now);
         osc.stop(now + 0.51);
     }
 
     getFrequencyData() {
-        if (!this.isInitialized || !this.analyser) {
+        if (!this.isInitialized || !this.analyser || !this.dataArray) {
             return new Uint8Array(16);
         }
         this.analyser.getByteFrequencyData(this.dataArray);
@@ -172,4 +202,10 @@ class AudioEngine {
     }
 }
 
-window.AudioEngine = AudioEngine;
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { AudioEngine };
+}
+
+if (typeof window !== 'undefined') {
+    window.AudioEngine = AudioEngine;
+}
