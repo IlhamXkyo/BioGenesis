@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const { ParticleSimulation } = require('../simulation.js');
+const { ParticleSimulation } = require('../js/simulation.js');
 
 test('ParticleSimulation - Initialization & Defaults', () => {
     const sim = new ParticleSimulation();
